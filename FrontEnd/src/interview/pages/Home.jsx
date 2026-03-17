@@ -1,77 +1,151 @@
-import "../style/Home.scss";
+import React,{useState, useRef} from 'react'
+import "../style/Home.scss"
+import { useInterview } from '../Hooks/useInterview'
+import { useNavigate } from 'react-router-dom'
 
 const Home = () => {
-  return (
-    <main className="home-page">
-      <section className="home-shell">
-        <div className="hero-head">
-          <div>
-            <h1>Create Your Custom Interview Plan</h1>
-            <p>Let our AI analyze the job requirements and your unique profile to build a winning strategy.</p>
-          </div>
-        </div>
 
-        <div className="form-grid">
-          <div className="card left-card">
-            <div className="card-line">
-              <div className="section-left">
-                <span className="icon">📌</span>
-                <div>
-                  <p className="section-title">Target Job Description</p>
+    const {loading, generateReport} = useInterview()
+    const [jobDescription, setjobDescription] = useState("")
+    const [selfDescription, setselfDescription] = useState("")
+    const resumeInputRef = useRef()
+
+    const navigate = useNavigate()
+
+    const handleGenerateReport = async () =>{
+        try {
+            const resumeFile = resumeInputRef.current?.files?.[0] ?? null
+            if (!jobDescription.trim()) {
+                alert("Please enter a job description.")
+                return
+            }
+            if (!resumeFile && !selfDescription.trim()) {
+                alert("Please provide either a resume or self description.")
+                return
+            }
+
+            const data = await generateReport({jobDescription, selfDescription, resumeFile})
+            if (data?._id) {
+                navigate(`/interview/${data._id}`)
+            } else {
+                alert("Interview generated, but no id was returned.")
+            }
+        } catch (error) {
+            console.error(error)
+            alert("Unable to generate interview strategy. Please try again.")
+        }
+    }
+
+    if(loading){
+        return(
+            <main className='loading-screen'>
+                <h1>Loading your interview plan...</h1>
+            </main>
+        )
+    }
+
+    return (
+        <div className='home-page'>
+
+            {/* Page Header */}
+            <header className='page-header'>
+                <h1>Create Your Custom <span className='highlight'>Interview Plan</span></h1>
+                <p>Let our AI analyze the job requirements and your unique profile to build a winning strategy.</p>
+            </header>
+
+            {/* Main Card */}
+            <div className='interview-card'>
+                <div className='interview-card__body'>
+
+                    {/* Left Panel - Job Description */}
+                    <div className='panel panel--left'>
+                        <div className='panel__header'>
+                            <span className='panel__icon'>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                            </span>
+                            <h2>Target Job Description</h2>
+                            <span className='badge badge--required'>Required</span>
+                        </div>
+                        <textarea
+                          onChange={(e)=> (setjobDescription(e.target.value))}
+                            className='panel__textarea'
+                            placeholder={`Paste the full job description here...\ne.g. 'Senior Frontend Engineer at Google requires proficiency in React, TypeScript, and large-scale system design...'`}
+                            maxLength={5000}
+                        />
+                        <div className='char-counter'>{jobDescription.length} / 5000 chars</div>
+                    </div>
+
+                    {/* Vertical Divider */}
+                    <div className='panel-divider' />
+
+                    {/* Right Panel - Profile */}
+                    <div className='panel panel--right'>
+                        <div className='panel__header'>
+                            <span className='panel__icon'>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            </span>
+                            <h2>Your Profile</h2>
+                        </div>
+
+                        {/* Upload Resume */}
+                        <div className='upload-section'>
+                            <label className='section-label'>
+                                Upload Resume
+                                <span className='badge badge--best'>Best Results</span>
+                            </label>
+                            <label className='dropzone' htmlFor='resume'>
+                                <span className='dropzone__icon'>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+                                </span>
+                                <p className='dropzone__title'>Click to upload or drag &amp; drop</p>
+                                <p className='dropzone__subtitle'>PDF or DOCX (Max 5MB)</p>
+                                <input ref={resumeInputRef} hidden type='file' id='resume' name='resume' accept='.pdf,.docx' />
+                            </label>
+                        </div>
+
+                        {/* OR Divider */}
+                        <div className='or-divider'><span>OR</span></div>
+
+                        {/* Quick Self-Description */}
+                        <div className='self-description'>
+                            <label className='section-label' htmlFor='selfDescription'>Quick Self-Description</label>
+                            <textarea
+                            onChange={(e)=> (setselfDescription(e.target.value))}
+                                id='selfDescription'
+                                name='selfDescription'
+                                className='panel__textarea panel__textarea--short'
+                                placeholder="Briefly describe your experience, key skills, and years of experience if you don't have a resume handy..."
+                            />
+                        </div>
+
+                        {/* Info Box */}
+                        <div className='info-box'>
+                            <span className='info-box__icon'>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12" stroke="#1a1f27" strokeWidth="2"/><line x1="12" y1="16" x2="12.01" y2="16" stroke="#1a1f27" strokeWidth="2"/></svg>
+                            </span>
+                            <p>Either a <strong>Resume</strong> or a <strong>Self Description</strong> is required to generate a personalized plan.</p>
+                        </div>
+                    </div>
                 </div>
-              </div>
-              <span className="pill required">Required</span>
-            </div>
 
-            <textarea
-              id="jobDescription"
-              placeholder="Paste the full job description here...\ne.g. Senior Frontend Engineer at Google requires proficiency in React, TypeScript, and large-scale system design..."
-            />
-            <div className="char-row">0 / 5000 chars</div>
-          </div>
-
-          <div className="card right-card">
-            <div className="card-line">
-              <div className="section-left">
-                <span className="icon">👤</span>
-                <div>
-                  <p className="section-title">Your Profile</p>
+                {/* Card Footer */}
+                <div className='interview-card__footer'>
+                    <span className='footer-info'>AI-Powered Strategy Generation &bull; Approx 30s</span>
+                    <button onClick={handleGenerateReport} className='generate-btn'>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>
+                        Generate My Interview Strategy
+                    </button>
                 </div>
-              </div>
-              <span className="pill best">Best Results</span>
             </div>
 
-            <div className="upload-box">
-              <div className="upload-inner">
-                <div className="cloud">⬆</div>
-                <p className="upload-title">Click to upload or drag & drop</p>
-                <p className="upload-sub">PDF or DOCX (Max 5MB)</p>
-              </div>
-              <label htmlFor="resume" className="upload-btn">Upload Resume</label>
-              <input id="resume" type="file" hidden accept=".pdf,.doc,.docx" />
-            </div>
-
-            <div className="or-divider"><span>OR</span></div>
-
-            <p className="label">Quick Self-Description</p>
-            <textarea
-              id="selfDescription"
-              className="mini-textarea"
-              placeholder="Briefly describe your experience, key skills, and years of experience if you don't have a resume handy..."
-            />
-
-            <div className="info-box">Either a <strong>Resume</strong> or a <strong>Self Description</strong> is required to generate a personalized plan.</div>
-
-            <button className="cta-btn">★ Generate My Interview Strategy</button>
-          </div>
+            {/* Page Footer */}
+            <footer className='page-footer'>
+                <a href='#'>Privacy Policy</a>
+                <a href='#'>Terms of Service</a>
+                <a href='#'>Help Center</a>
+            </footer>
         </div>
+    )
+}
 
-        <div className="footer-row">
-          AI-Powered Strategy Generation · Approx 30s
-        </div>
-      </section>
-    </main>
-  );
-};
-
-export default Home;
+export default Home
